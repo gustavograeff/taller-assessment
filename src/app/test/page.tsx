@@ -9,7 +9,7 @@ const fetchData = (): Promise<Transactions> => {
     return new Promise((res) => {
         setTimeout(() => {
             res(transactions)
-        }, 2000)
+        }, 500)
     })
 }
 
@@ -42,16 +42,28 @@ export default function Test() {
     }
 
     const checkTransaction = () => {
-        const sum = transactions.reduce((prev, cur) => {
-            return prev + cur.amount;
-        }, 0)
+        const getSummedTransactions = () => {
+            const numSet = new Map();
 
-        if (parseInt(targetAmountInput) !== sum) {
-            setTransactionState([]);
-            return;
+            for (const transaction of transactions) {
+                const complement = parseFloat(targetAmountInput) - transaction.amount;
+
+                if (numSet.has(complement)) {
+                    const match = numSet.get(complement)[0];
+                    return [transaction.id, match]
+                }
+
+                if (numSet.has(transaction.amount)) {
+                    numSet.get(transaction.amount).push(transaction.id);
+                } else {
+                    numSet.set(transaction.amount, [transaction.id])
+                }
+            }
         }
 
-        fetchTransactions()
+        const matchedTransactions = getSummedTransactions();
+       
+        setTransactionState(transactions.filter(transaction => matchedTransactions?.includes(transaction.id)));
     }
 
     const renderTransactions = () => {
@@ -67,6 +79,13 @@ export default function Test() {
                     </div>
         })
     }
+
+    useEffect(() => {
+        if (!targetAmountInput) {
+            fetchTransactions()
+            return 
+        }
+    }, [targetAmountInput])
     
     return (
         <div className="p-2">
